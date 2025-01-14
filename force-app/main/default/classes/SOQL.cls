@@ -16,7 +16,7 @@
 * Users of this class can expect to gain a solid understanding of SOQL in Apex and
 * be prepared to handle data retrieval tasks in Salesforce development.
 * 
-* @author Your Name
+* @author Jené T. Fuller
 */
 
 public with sharing class SOQL {
@@ -28,9 +28,13 @@ public with sharing class SOQL {
      * @return List of all leads with Id, LastName, Company, Phone, Email
      * Update the corresponding test class and testGetAllLeads method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Lead> getAllLeads() {
     //  The body of the method
-    //}
+    List<Lead> grabLeads = [SELECT Id, LastName, Company, Phone, Email 
+                            FROM Lead
+                            ];
+    return grabLeads;
+    }
 
     /**
      * Question 2
@@ -39,9 +43,14 @@ public with sharing class SOQL {
      * @return A list of Contact records.
      * Update the corresponding test class and testGetContactsByFirstName method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Contact> getContactsByFirstName() {
     //  The body of the method
-    //}
+    List<Contact> contactFirstName = [SELECT Id, FirstName, LastName, Name
+                                    FROM Contact
+                                    WHERE FirstName LIKE 'John'
+                                    ];
+    return contactFirstName;
+    }
 
     /**
      * Question 3
@@ -50,9 +59,20 @@ public with sharing class SOQL {
      * @return A list of Contact Ids.
      * Update the corresponding test class and testGetContactIdsByLastName method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Id> getContactIdsByLastName() {
     //  The body of the method
-    //}
+        List<Contact> contactList = [SELECT Id, LastName
+                                    FROM Contact
+                                    WHERE LastName IN ('Jones', 'Smith')];
+        //new list to store Ids
+        List<Id> contactIdsList = new List<Id>();
+
+        // Loop through records, store matching IDs
+        for (Contact c : contactList){
+            contactIdsList.add(c.Id);
+        }
+        return contactIdsList;
+    }
 
     /**
      * Question 4
@@ -63,9 +83,14 @@ public with sharing class SOQL {
      * @return A list of Opportunities with important opportunities fields
      * Update the corresponding test class and testGetClosedWonOpportunityCountByAccount method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
-    //  The body of the method
-    //}
+    public static List<Opportunity> getClosedWonOpportunityCountByAccount (String accountId) {
+        //generate SOQL
+        List<Opportunity> oppsWitMatcinghAccount = [SELECT Id, Name, AccountId, StageName, CloseDate, Amount
+                                                    FROM Opportunity
+                                                    WHERE StageName = 'Closed Won' AND AccountId = :accountId
+                                                    ];
+        return oppsWitMatcinghAccount;
+    }
 
     /**
      * Question 5
