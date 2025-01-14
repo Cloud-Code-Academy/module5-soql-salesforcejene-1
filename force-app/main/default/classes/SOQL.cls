@@ -99,9 +99,19 @@ public with sharing class SOQL {
      * @return The Integer count of Account records.
      * Update the corresponding test class and testGetAccountCount method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
-    //  The body of the method
-    //}
+    public static Integer getAccountCount() {
+        //Using AggregateResult query to get count
+        List<AggregateResult> arAccountTotal = [SELECT COUNT(Id) totCount 
+                                                FROM Account];
+        
+        //Check for nulls, retreive count from AR query, or return 0
+        If (!arAccountTotal.isEmpty()){
+            Integer totCount = (Integer)arAccountTotal[0].get('totCount');
+            return totCount;
+        }else {
+            return 0; //no records
+        }        
+    }
 
     /**
      * Question 6
@@ -110,9 +120,14 @@ public with sharing class SOQL {
      * @return A map of Task Ids to Task records.
      * Update the corresponding test class and testGetTasksDueNextWeek method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static Map<Id,Task> getTasksDueNextWeek() {
     //  The body of the method
-    //}
+        List<Task> upcomingTask = [SELECT Id, ActivityDate
+                                    FROM Task
+                                    WHERE ActivityDate = NEXT_N_DAYS:7];
+        Map<Id,Task> dueNextWeek = new Map<Id,Task>(upcomingTask);
+        return dueNextWeek;    
+    }
 
     /**
      * Question 7
