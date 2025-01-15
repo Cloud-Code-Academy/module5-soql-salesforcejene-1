@@ -124,7 +124,8 @@ public with sharing class SOQL {
     //  The body of the method
         List<Task> upcomingTask = [SELECT Id, ActivityDate
                                     FROM Task
-                                    WHERE ActivityDate = NEXT_N_DAYS:7];
+                                    WHERE ActivityDate = NEXT_N_DAYS:7
+                                ];
         Map<Id,Task> dueNextWeek = new Map<Id,Task>(upcomingTask);
         return dueNextWeek;    
     }
@@ -136,9 +137,14 @@ public with sharing class SOQL {
      * @return A list of Contact records.
      * Update the corresponding test class and testGetContactsByEmailDomain method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Contact> getContactsByEmailDomain() {
     //  The body of the method
-    //}
+    List<Contact> specificContacts = [SELECT Id, Name, Email
+                                        FROM Contact
+                                        WHERE Email LIKE '%example.com'
+                                    ];
+    return specificContacts;
+    }
 
     /**
      * Question 8
@@ -148,7 +154,11 @@ public with sharing class SOQL {
      * @return A list of Opportunity records.
      */
     public static List<Opportunity> getOpportunitiesByNameKeyword(String keyword) {
-        return null; // Replace null with the variable you used to store the result
+        List<Opportunity> oppsByKeyword = [SELECT Id, Name
+                                            FROM Opportunity
+                                            WHERE Name LIKE :keyword +'%'
+                                            ];
+        return oppsByKeyword; 
     }
 
     /**
@@ -157,8 +167,14 @@ public with sharing class SOQL {
      * @return A list of Case records.
      */
     public static List<Case> getFilterCaseOrigins() {
-        return null; // Replace null with the variable you used to store the result
+        List<Case> filtedCases = [SELECT Id, Origin
+                                    FROM Case
+                                    WHERE Origin
+                                    NOT IN ('Web', 'Email', null)
+                                ];
+        return filtedCases;
     }
+
 
     /**
      * Question 10
