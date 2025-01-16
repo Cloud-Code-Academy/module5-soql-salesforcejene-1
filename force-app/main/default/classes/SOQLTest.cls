@@ -250,8 +250,12 @@ public with sharing class SOQLTest {
         Lead testLead5 = new Lead(LastName = 'Test Lead 5', Company = 'Test Company 5', Phone = '1234567890', Email = '', LeadSource = '', Title = '');
         insert new List<Lead>{testLead1, testLead2, testLead3, testLead4};
 
+        //assign values for params
+        String leadSource = 'Web';
+        String keyword    = 'Engineer';
+        
         // Call the method to test
-        List<Lead> leads = null; //Replace null with your method passing 'Web', 'Engineer' 
+        List<Lead> leads = SOQL.getLeadsBySourceOrTitle(leadSource, keyword);
 
         // Assert that the number of leads returned is correct
         System.assertEquals(3, leads.size(), 'Number of leads returned is incorrect.');

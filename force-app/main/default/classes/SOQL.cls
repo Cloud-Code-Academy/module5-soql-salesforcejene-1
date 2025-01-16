@@ -186,9 +186,19 @@ public with sharing class SOQL {
      * @return A list of Lead records.
      * Update the corresponding test class and testGetLeadsBySourceOrTitle method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
-    //  The body of the method
-    //}    
+    public static List<Lead> getLeadsBySourceOrTitle (String leadSource, String keyword) {
+        List<Lead> findLeads = [SELECT Id, LeadSource, Title
+                                        FROM Lead
+                                        WHERE LeadSource LIKE :leadSource
+                                        OR Title LIKE :('%' + keyword +'%')                                        
+                                    ];                        
+        System.debug('List of found Leads: ' + findLeads);        
+
+        If(findLeads.isEmpty()){
+            System.debug('There are no records');
+        }
+        return findLeads;        
+    } 
 
     /**
      * Question 11
