@@ -46,8 +46,8 @@ public with sharing class SOQL {
     public static List<Contact> getContactsByFirstName() {
     //  The body of the method
     List<Contact> contactFirstName = [SELECT Id, FirstName, LastName, Name
-                                    FROM Contact
-                                    WHERE FirstName LIKE 'John'
+                                        FROM Contact
+                                        WHERE FirstName LIKE 'John'
                                     ];
     return contactFirstName;
     }
@@ -63,13 +63,14 @@ public with sharing class SOQL {
     //  The body of the method
         List<Contact> contactList = [SELECT Id, LastName
                                     FROM Contact
-                                    WHERE LastName IN ('Jones', 'Smith')];
+                                    WHERE LastName IN ('Jones', 'Smith')
+                                    ];
         //new list to store Ids
         List<Id> contactIdsList = new List<Id>();
 
         // Loop through records, store matching IDs
-        for (Contact c : contactList){
-            contactIdsList.add(c.Id);
+        for (Contact contact : contactList){
+            contactIdsList.add(contact.Id);
         }
         return contactIdsList;
     }
@@ -187,16 +188,11 @@ public with sharing class SOQL {
      * Update the corresponding test class and testGetLeadsBySourceOrTitle method to cover this method
      */
     public static List<Lead> getLeadsBySourceOrTitle (String leadSource, String keyword) {
-        List<Lead> findLeads = [SELECT Id, LeadSource, Title
-                                        FROM Lead
-                                        WHERE LeadSource LIKE :leadSource
-                                        OR Title LIKE :('%' + keyword +'%')                                        
-                                    ];                        
-        System.debug('List of found Leads: ' + findLeads);        
-
-        If(findLeads.isEmpty()){
-            System.debug('There are no records');
-        }
+        List<Lead> findLeads = [SELECT LeadSource, Title, LastName, Company, Email, Phone
+                                FROM Lead
+                                WHERE LeadSource LIKE :leadSource
+                                OR Title LIKE :('%' + keyword +'%')                                        
+                            ];
         return findLeads;        
     } 
 
@@ -209,15 +205,20 @@ public with sharing class SOQL {
      */
     public static List<String> getContactNamesByAccount(Id accountId) {
         // Create a list to hold the Contact LastNames
+        List<String> contactLastNames = new List<String>();
 
         // Query the Contacts
-        // Loop through each Contact and add the LastName to the list
-        //for () {
-        //    
-        //}
+        List<Contact> listOfContacts = [SELECT Id, LastName, accountId
+                                        FROM Contact
+                                        WHERE accountId = :accountId
+                                    ];   
 
+        // Loop through each Contact and add the LastName to the list
+        for (Contact contact : listOfContacts) {
+            contactLastNames.add(contact.LastName);
+        }
         // Return the list of Contact LastNames
-        return null; // Replace null with the variable you used to store the result
+        return contactLastNames;
     }
 
     /**
@@ -229,9 +230,16 @@ public with sharing class SOQL {
      */
     public static Decimal getTotalRevenueByStage(String stage) {
         // Use AggregateQuery to get the total revenue
+        List<AggregateResult> arRevnueTotal = [SELECT SUM(Amount) totRevAmt
+                                                FROM opportunity
+                                                WHERE StageName = :stage
+                                                OR Amount >= 10000
+                                            ];
+        //instatiate variable to store amount as decimal
+        Decimal totRevAmt = (Decimal)arRevnueTotal[0].get('totRevAmt');
 
         // Return the total revenue
-        return null; // Replace null with the variable you used to store the result
+        return totRevAmt;
     }
 
     /**
@@ -240,7 +248,12 @@ public with sharing class SOQL {
      * @return A list of the first 10 Accounts ordered by Name.
      */
     public static List<Account> getFirstTenAccounts() {
-        return null; // Replace null with the variable you used to store the result
+        List<Account> accountFirst10List = [SELECT Id, Name
+                                            FROM Account                                            
+                                            ORDER BY Name DESC
+                                            LIMIT 10
+                                        ];
+        return accountFirst10List;
     }
     
     /**

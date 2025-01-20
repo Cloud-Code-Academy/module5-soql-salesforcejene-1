@@ -252,7 +252,7 @@ public with sharing class SOQLTest {
 
         //assign values for params
         String leadSource = 'Web';
-        String keyword    = 'Engineer';
+        String keyword      = 'Engineer';
         
         // Call the method to test
         List<Lead> leads = SOQL.getLeadsBySourceOrTitle(leadSource, keyword);
