@@ -262,7 +262,15 @@ public with sharing class SOQL {
      * @return A list of Opportunities with an Amount greater than 100,000, ordered by CloseDate, and limited to 5 records.
      */
     public static List<Opportunity> getHighValueOpportunities() {
-        return null; // Replace null with the variable you used to store the result
+        List<Opportunity> first5OppList = [SELECT Id, Name, Amount, CloseDate
+                                            FROM Opportunity
+                                            WHERE Amount > 100000
+                                            ORDER BY CloseDate ASC
+                                            LIMIT 5
+                                        ];
+        System.debug('results of first5OppList: ' + first5OppList);                                        
+        return first5OppList;
+        
     }
     
     /**
@@ -271,7 +279,12 @@ public with sharing class SOQL {
      * @return A list of Contacts
      */
     public static List<Contact> getBirthdateContacts() {
-        return null; // Replace null with the variable you used to store the result
+        List<Contact> contactMostRecentDates = [SELECT Id, LastName, Birthdate
+                                                FROM Contact
+                                                ORDER BY Birthdate DESC
+                                                LIMIT 3
+                                                ];
+        return contactMostRecentDates;
     }
     
     /**
@@ -280,7 +293,14 @@ public with sharing class SOQL {
      * @return A list of Cases
      */
     public static List<Case> getCasesWithStatus() {
-        return null; // Replace null with the variable you used to store the result
+        List<Case> caseOpenOffsetby5 = [SELECT Id, Status, CreatedDate
+                                        FROM Case
+                                        WHERE Status = 'Open'
+                                        ORDER BY CreatedDate ASC
+                                        LIMIT 10
+                                        OFFSET 5
+                                    ];
+        return caseOpenOffsetby5; 
     }
 
     /**
@@ -292,14 +312,19 @@ public with sharing class SOQL {
      */
     public static Set<Id> getCaseIdsByAccount(Id accountId) {
         // Create a set to hold the Case Ids
+        Set<Id> caseIdSet = new Set<Id>();
 
         // Query the Cases
+        List<Case> listOfCases = [SELECT Id, Subject, Status
+                                FROM Case
+                                WHERE AccountId =: accountId
+                            ];
         // Loop through each Case and add the Id to the set
-        //for () {
-        //    
-        //}
+        for (Case cs : listOfCases) {
+            caseIdSet.add(cs.Id);
+        }
 
-        return null; // Replace null with the variable you used to store the result
+        return caseIdSet;
     }
 
     /**
@@ -316,7 +341,7 @@ public with sharing class SOQL {
         // Query the Accounts
         // Loop through each Account and add the Id and Name to the map
 
-        return null; // Replace null with the variable you used to store the result
+        return null; // Replace null with the variable you used.//z to store the result
     }
 
     /**
