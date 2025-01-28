@@ -380,7 +380,16 @@ public with sharing class SOQL {
      * @return An Account record with related Opportunities.
      */
     public static Account getAccountAndOpportunitiesFromAccountId(Id accountId) {
-        return null; // Replace null with the variable you used to store the result
+        List<Account> accWOpps = [SELECT Id, Name,
+                                    (SELECT Id, Name, Account.Name
+                                    FROM Opportunities)
+                                FROM Account
+                                WHERE Id = :accountId
+                                ];
+                                
+        Account myAcc = accWOpps[0];
+
+        return myAcc;
     }
 
     /**
@@ -391,14 +400,34 @@ public with sharing class SOQL {
      * @return List of contacts with the same Mailing State as the Account Billing State
      */
     public static List<Contact> getAccountsWithContactsByState(Id accountId) {
+
+
+        //trying to validate the CRUD permissions of current user
+        String objectStr = 'Account';
+        Schema.SObjectType convertType = Schema.getGlobalDescribe().get(objectStr);
+        Schema.DescribeSObjectResult drSObj = convertType.getDescribe();
+        System.debug('###### '+drSObj.isAccessible());
+
         // Query the Account
+        list<Account> accList = [SELECT Id, Name, BillingState
+                            FROM Account
+                            WHERE Id = :accountId
+                        ];
+        System.debug(LoggingLevel.FINEST, 'results of accList: ' + accList);
 
         // Store the Account's BillingState
+        Account accMatch = accList[0];
 
         // Query the Contacts
-        return null; // Replace null with the variable you used to store the result
-    }
+        List<Contact> conMatchList = [SELECT Id, Name, MailingState
+                                FROM Contact
+                                WHERE AccountId  = :accountId
+                                AND MailingState = :accMatch.BillingState];
+        System.debug('results of contact match list:: '+ conMatchList);
 
+        return conMatchList;  //*** NOT SURE WHY the no of Contacts expected doesn't match */
+    }
+ 
     /**
      * Question 22
      * Extracts email domains from them leads, then finds Accounts with matching website domains
@@ -407,22 +436,49 @@ public with sharing class SOQL {
      * @param A set of Lead Ids.
      * @return A list of Accounts with matching email domains.
      */
-    public static List<Account> findAccountsByLeadEmailDomains(Set<Id> leadIds) {
+    public static List<Account> findAccountsByLeadEmailDomains(Set<Id> leadIds) {        
+        //variable to store Account list
+        List<Account> acc = new List<Account>();
+
         // Query the Leads
+        If (Schema.SObjectType.Lead.isAccessible() &&
+            Schema.SObjectType.Lead.fields.Name.isAccessible() &&
+            Schema.sObjectType.Lead.fields.Email.isAccessible()) {
+            List<Lead> leadList = [SELECT Id, Name, Email
+                                    FROM Lead
+                                    WHERE Id IN :leadIds
+                                ];
 
-        // Create a set of email domains from the Leads
+            // Create a set of email domains from the Leads
+            Set<String> emailDoms = new Set<String>();
 
-        // Loop through each Lead
-
-            // Get the email from the Lead
-
-            // Check if the email is not null
-
-                // Add the email domain to the set
-
-        
-        // Query the Accounts
-        return null; // Replace null with the variable you used to store the result
+            // Loop through each Lead
+            for (Lead lead : leadList){
+                // Get the email from the Lead
+                String email = lead.Email;
+                
+                // Check if the email is not null
+                if(email != null && email.contains('@')){
+                    // Add the email domain to the set
+                    String dom = email.split('@')[1];
+                    //changed case for consistency
+                    emailDoms.add(dom.toLowerCase());
+                }
+            }
+            
+            // Query the Accounts
+            if (Schema.SObjectType.Account.isAccessible() &&
+                Schema.SObjectType.Account.fields.Name.isAccessible() &&
+                Schema.SObjectType.Account.fields.Website.isAccessible()){
+                acc = [SELECT Id, Name, Website
+                                    FROM Account
+                                    WHERE Website != null
+                                    AND Website 
+                                    LIKE :('%' + String.join(new List<String>(emailDoms), '%') + '%')
+                                ];
+            }//**NOT SURE WHY validation check did not pass for the Account object**
+        }
+        return acc;
     }
 
     /**
@@ -455,8 +511,19 @@ public with sharing class SOQL {
      * Example: getOpportunityDetailsForClosedWon()
      * @return A list of filtered Opportunity
      */
-    public static List<Opportunity> getOpportunityDetailsForClosedWon() {        
-        return null; // Replace null with the variable you used to store the result
+    public static List<Opportunity> getOpportunityDetailsForClosedWon() {      
+        List<Opportunity>oppClosedWonList = new List<Opportunity>();
+        if(Schema.SObjectType.Opportunity.isAccessible() &&
+            Schema.SObjectType.Opportunity.fields.Name.isAccessible() &&
+            Schema.SObjectType.Opportunity.fields.StageName.isAccessible() &&
+            Schema.SObjectType.Opportunity.fields.OwnerId.isAccessible() &&
+            Schema.SObjectType.Account.fields.Name.isAccessible()){
+            oppClosedWonList = [SELECT Id, Name, Account.Name, Owner.Name
+                                                FROM Opportunity
+                                                WHERE StageName = 'Closed Won'
+                                            ];
+            }//**NOT SURE WHY validation check did not pass for the Account object**
+        return oppClosedWonList;
     }
 
     /**
