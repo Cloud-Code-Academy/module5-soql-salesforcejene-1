@@ -473,7 +473,7 @@ public with sharing class SOQL {
                 acc = [SELECT Id, Name, Website
                                     FROM Account
                                     WHERE Website != null
-                                    AND Website 
+                                    AND   Website 
                                     LIKE :('%' + String.join(new List<String>(emailDoms), '%') + '%')
                                 ];
             }//**NOT SURE WHY validation check did not pass for the Account object**
@@ -490,19 +490,52 @@ public with sharing class SOQL {
      * @param List of cloned Opportunity Ids
      */
     public static void cloneLineItems(Id origOppId, List<Id> cloneOppIds) {
+        List<OpportunityLineItem> oppOrgLineItemList = new List<OpportunityLineItem>();
+        
+
         // Query the original Opportunity Line Items
+        If (Schema.SObjectType.OpportunityLineItem.isAccessible() &&
+            Schema.SObjectType.OpportunityLineItem.fields.OpportunityId.isAccessible() &&
+            Schema.SObjectType.Opportunity.fields.Pricebook2Id.isAccessible() &&
+            Schema.SObjectType.OpportunityLineItem.fields.Product2Id.isAccessible() &&
+            Schema.SObjectType.OpportunityLineItem.fields.Quantity.isAccessible() &&
+            Schema.SObjectType.OpportunityLineItem.fields.UnitPrice.isAccessible()) {
+
+            oppOrgLineItemList = [SELECT Id, OpportunityId, Product2Id, Opportunity.Pricebook2Id, Quantity, UnitPrice
+                                        FROM OpportunityLineItem
+                                        WHERE OpportunityId = :origOppId
+                                        ];
+        } //**NOT SURE WHY validation check did not pass for the OpportunityLineItem object**
 
         // Create a list to hold the new line items
-
+        List<OpportunityLineItem> newLineItems = new List<OpportunityLineItem>();
+        
         // Generate a random number between 1 and 3
+        Integer randomNumber = Math.round(Math.random() * 2) + 1;
 
         // Loop through each cloned Opportunity Id
-
+        for (Id cloneOppId : cloneOppIds){
             // Loop through each original line item
+            for (OpportunityLineItem origLineItem : oppOrgLineItemList) {   
 
                 // Clone the original line item and add the random number to the quantity
-
+                OpportunityLineItem clonedItem = new OpportunityLineItem();
+                //clonedItem.Pricebook2Id        = oppOrgLineItemList[0].Pricebook2Id;
+                //clonedItem.Pricebook2Id        = origLineItem.Pricebook2Id;
+                clonedItem.OpportunityId       = cloneOppId;
+                clonedItem.Product2Id          = origLineItem.Product2Id;
+                clonedItem.Quantity            = origLineItem.Quantity + randomNumber;
+                clonedItem.UnitPrice           = origLineItem.UnitPrice;
+                //add to list
+                newLineItems.add(clonedItem);
+            } 
+        }
         // Insert the new line items
+        if (!newLineItems.isEmpty()){
+            if (Schema.SObjectType.OpportunityLineItem.isAccessible()) {
+                insert newLineItems;
+            } //**NOT SURE WHY validation check did not pass for the Account object**
+        }
     }
     
     /**
@@ -533,8 +566,15 @@ public with sharing class SOQL {
      */
     public static void setPrimaryContact() {
         //Use the getOpportunityDetailsForClosedWon() method to get the Opportunities
-
+        List<Opportunity> closedWonOpps = getOpportunityDetailsForClosedWon();
         // Create a set of Account Ids from the Opportunities
+        /*Set<Account> acctIdSet = [SELECT Id, 
+                                    (SELECT Id
+                                    FROM Opportunities
+                                    WHERE Id = closedWonOpps.Id)
+                                    FROM Account
+                                    WHERE Id = :closedWonOpps
+                                ];*/
 
         // Query the Contacts
 
