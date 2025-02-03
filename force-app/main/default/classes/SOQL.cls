@@ -401,30 +401,36 @@ public with sharing class SOQL {
      */
     public static List<Contact> getAccountsWithContactsByState(Id accountId) {
 
-
-        //trying to validate the CRUD permissions of current user
-        String objectStr = 'Account';
-        Schema.SObjectType convertType = Schema.getGlobalDescribe().get(objectStr);
-        Schema.DescribeSObjectResult drSObj = convertType.getDescribe();
-        System.debug('###### '+drSObj.isAccessible());
+        List<Account> accList      = new List<Account>();
+        List<Contact> conMatchList = new List<Contact>();
 
         // Query the Account
-        list<Account> accList = [SELECT Id, Name, BillingState
-                            FROM Account
-                            WHERE Id = :accountId
+        if (Schema.SObjectType.Account.isAccessible() &&
+            Schema.SObjectType.Account.fields.Name.isAccessible() &&
+            Schema.SObjectType.Account.fields.BillingState.isAccessible() ){
+            accList = [SELECT Id, Name, BillingState
+                        FROM Account
+                        WHERE Id = :accountId
                         ];
-        System.debug(LoggingLevel.FINEST, 'results of accList: ' + accList);
+        }
 
-        // Store the Account's BillingState
-        Account accMatch = accList[0];
+        // Store the Account's BillingState if not emapty
+        If (!accList.isEmpty()) {
+            Account accMatch = accList[0];
 
-        // Query the Contacts
-        List<Contact> conMatchList = [SELECT Id, Name, MailingState
+            // Query the Contacts
+            If (Schema.SObjectType.Contact.isAccessible() &&
+                Schema.SObjectType.Contact.fields.Name.isAccessible() && 
+                Schema.SObjectType.Contact.fields.MailingState.isAccessible() &&
+                Schema.SObjectType.Contact.fields.AccountId.isAccessible() ){
+            
+                conMatchList = [SELECT Id, Name, MailingState
                                 FROM Contact
                                 WHERE AccountId  = :accountId
-                                AND MailingState = :accMatch.BillingState];
-        System.debug('results of contact match list:: '+ conMatchList);
-
+                                AND MailingState = :accMatch.BillingState
+                            ];
+            }
+        }
         return conMatchList;  //*** NOT SURE WHY the no of Contacts expected doesn't match */
     }
  
@@ -471,14 +477,14 @@ public with sharing class SOQL {
                 Schema.SObjectType.Account.fields.Name.isAccessible() &&
                 Schema.SObjectType.Account.fields.Website.isAccessible()){
                 acc = [SELECT Id, Name, Website
-                                    FROM Account
-                                    WHERE Website != null
-                                    AND   Website 
-                                    LIKE :('%' + String.join(new List<String>(emailDoms), '%') + '%')
-                                ];
+                        FROM Account
+                        WHERE Website != null
+                        AND   Website 
+                        LIKE :('%' + String.join(new List<String>(emailDoms), '%') + '%')
+                    ];
             }//**NOT SURE WHY validation check did not pass for the Account object**
         }
-        return acc;
+    return acc;
     }
 
     /**
@@ -490,8 +496,19 @@ public with sharing class SOQL {
      * @param List of cloned Opportunity Ids
      */
     public static void cloneLineItems(Id origOppId, List<Id> cloneOppIds) {
+
+        List<Opportunity>                    origOpp = new List<Opportunity>();
         List<OpportunityLineItem> oppOrgLineItemList = new List<OpportunityLineItem>();
         
+        //get opp info to store for later
+        if(Schema.SObjectType.Opportunity.isAccessible() &&
+            Schema.SObjectType.Opportunity.fields.Pricebook2Id.isAccessible()){
+            origOpp = [SELECT Id, Pricebook2Id
+                        FROM Opportunity
+                        WHERE id = :origOppId
+                    ];
+        }
+        System.debug('origOpp: ' + origOpp);
 
         // Query the original Opportunity Line Items
         If (Schema.SObjectType.OpportunityLineItem.isAccessible() &&
@@ -505,8 +522,13 @@ public with sharing class SOQL {
                                         FROM OpportunityLineItem
                                         WHERE OpportunityId = :origOppId
                                         ];
-        } //**NOT SURE WHY validation check did not pass for the OpportunityLineItem object**
 
+            /* oppOrgLineItemList = [SELECT Id, OpportunityId, Opportunity.Pricebook2Id, Product2Id, Quantity, UnitPrice
+                                        FROM OpportunityLineItem
+                                        WHERE OpportunityId = :origOppId
+                                    ];*/
+        } //**NOT SURE WHY validation check did not pass for the OpportunityLineItem object**
+        System.debug('oppOrgLineItemList results: ' + oppOrgLineItemList);
         // Create a list to hold the new line items
         List<OpportunityLineItem> newLineItems = new List<OpportunityLineItem>();
         
@@ -516,6 +538,7 @@ public with sharing class SOQL {
         // Loop through each cloned Opportunity Id
         for (Id cloneOppId : cloneOppIds){
             // Loop through each original line item
+            cloneOppId = origOppId;
             for (OpportunityLineItem origLineItem : oppOrgLineItemList) {   
 
                 // Clone the original line item and add the random number to the quantity
@@ -534,7 +557,7 @@ public with sharing class SOQL {
         if (!newLineItems.isEmpty()){
             if (Schema.SObjectType.OpportunityLineItem.isAccessible()) {
                 insert newLineItems;
-            } //**NOT SURE WHY validation check did not pass for the Account object**
+            } //**NOT SURE WHY validation check did not pass for the OLI object**
         }
     }
     
@@ -547,10 +570,12 @@ public with sharing class SOQL {
     public static List<Opportunity> getOpportunityDetailsForClosedWon() {      
         List<Opportunity>oppClosedWonList = new List<Opportunity>();
         if(Schema.SObjectType.Opportunity.isAccessible() &&
+            Schema.SObjectType.User.isAccessible() &&
+            Schema.SObjectType.Account.isAccessible() &&
             Schema.SObjectType.Opportunity.fields.Name.isAccessible() &&
             Schema.SObjectType.Opportunity.fields.StageName.isAccessible() &&
             Schema.SObjectType.Opportunity.fields.OwnerId.isAccessible() &&
-            Schema.SObjectType.Account.fields.Name.isAccessible()){
+            Schema.SObjectType.Account.fields.Name.isAccessible() ){
             oppClosedWonList = [SELECT Id, Name, Account.Name, Owner.Name
                                                 FROM Opportunity
                                                 WHERE StageName = 'Closed Won'
