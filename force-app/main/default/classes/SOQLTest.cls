@@ -252,7 +252,7 @@ public with sharing class SOQLTest {
 
         //assign values for params
         String leadSource = 'Web';
-        String keyword      = 'Engineer';
+        String keyword    = 'Engineer';
         
         // Call the method to test
         List<Lead> leads = SOQL.getLeadsBySourceOrTitle(leadSource, keyword);
@@ -744,7 +744,7 @@ public with sharing class SOQLTest {
         Opportunity testOpp1 = new Opportunity(Name = 'Test Opp 1', StageName = 'Closed Won', CloseDate = Date.today(), AccountId = testAccount1.Id);
         insert testOpp1;
 
-        // Call the method to test
+        // Call the method to test 
         SOQL.setPrimaryContact();
 
         // Query for the updated Opportunity

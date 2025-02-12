@@ -1,6 +1,148 @@
-// Use .soql files to store SOQL queries.
-// You can execute queries in VS Code by selecting the
-//     query text and running the command:
-//     SFDX: Execute SOQL Query with Currently Selected Text
 
-SELECT Id, Name FROM Account
+// Query the Contacts
+SELECT Id, FirstName, LastName
+FROM Contact
+
+SELECT Id, Name,
+    (SELECT Id, Name
+FROM Opportunities)
+FROM Account
+
+SELECT Id, Pricebook2Id, 
+    (SELECT Id, Product2Id, Quantity, UnitPrice 
+    FROM OpportunityLineItems)
+FROM Opportunity
+
+SELECT Id, OpportunityId, Product2Id, Opportunity.Pricebook2Id, Quantity, UnitPrice
+FROM OpportunityLineItem
+
+SELECT Id, Name, Account.Name, Account.OwnerId, Owner.Name, Account.Owner.Name
+    FROM Opportunity
+    WHERE StageName = 'Closed Won'
+
+SELECT Id, Name, MailingState, Account.BillingState
+FROM Contact
+WHERE (MailingState = Account.BillingState OR (MailingState = null AND Account.BillingState = null))
+ORDER BY MailingState NULLS LAST
+
+/*Retrieves all contacts that have the Mailing State
+ similar to the Account Billing State.
+*/
+SELECT Id, Name, MailingState
+FROM Contact
+WHERE MailingState LIKE Account.BillingState
+
+SELECT Id, Name,
+    (SELECT Id, Name
+    FROM Opportunities)
+FROM Account
+
+SELECT Id, Name, 
+(SELECT Id
+FROM Contacts)
+FROM Account
+
+SELECT Id, Name, BillingCountry
+FROM Account
+WHERE BillingCountry NOT IN ('United States', 'US', 'USA')
+ORDER BY BillingCountry DESC NULLS LAST
+
+SELECT Id, Status, CreatedDate, Account.Name
+    FROM Case
+    WHERE Status = 'Open'
+    ORDER BY CreatedDate DESC
+    LIMIT 10
+    OFFSET 5
+
+SELECT Id, Name, CloseDate, Amount
+    FROM Opportunity
+    WHERE Amount >= 10000
+    ORDER BY CloseDate DESC
+    LIMIT 5
+
+SELECT Id, Name
+FROM Account                                            
+ORDER BY Name DESC
+LIMIT 10
+
+SELECT Id, LastName, accountId
+    FROM Contact
+
+SELECT Name, LeadSource, Title
+    FROM Lead
+    WHERE Title LIKE '%Engineer%'
+    //OR Title LIKE '%\' :title \'%'
+
+
+[SELECT Id, AccountId, Origin
+    FROM Case
+    WHERE Origin
+    NOT IN ( 'Web' ) 
+    AND Origin NOT IN ( 'Email' ) 
+    AND Origin NOT IN ( null )]
+
+SELECT Id, AccountId, Origin
+    FROM Case
+    WHERE Origin
+    NOT IN ( 'Web', 'Email', null ) 
+
+
+    SELECT Id, AccountId, Origin
+    FROM Case
+    WHERE Origin
+    EXCLUDES ( 'Web', 'Email', null ) 
+
+SELECT Id, Name, Account.Name
+    FROM Opportunity
+    WHERE Name
+    LIKE '%Edge%'
+
+SELECT Id, Name, Email
+    FROM Contact
+    WHERE Email LIKE '%example.com%'
+
+SELECT Id, Status, Subject, ActivityDate, CreatedDate
+FROM Task
+WHERE ActivityDate = NEXT_N_DAYS:7
+
+
+List<String> industriesToFilter = new List<String>();
+industriesToFilter.add('Finance');
+industriesToFilter.add('Energy');
+
+SELECT Id, Name, Industry FROM Account WHERE Industry IN :industriesToFilter;
+
+SELECT Id, FirstName, LastName FROM Contact WHERE LastName = 'Levy' AND 'Bond'
+
+
+SELECT Id, LastName
+    FROM Contact
+    WHERE LastName IN ('Levy', 'Bond')
+    GROUP BY Count
+
+//JTF
+SELECT Id, Name (SELECT Id, Name
+                FROM Account
+                WHERE AccountId = Opportunity.AccountId
+                )
+FROM Opportunity
+
+//CAi
+SELECT Id, Name, (SELECT Id, Name
+                    FROM Opportunities
+                    WHERE StageName = 'Closed Won')
+FROM Account
+WHERE Id = '001ak00000aw6wnAAA'
+
+SELECT Name, CloseDate, Amount, Account.Name, AccountId
+FROM Opportunity
+WHERE StageName = 'Closed Won'
+ORDER BY Account.Name
+
+System.debug('Jene is getting it y\'all');
+
+SELECT Id, Name, Account.Name, AccountId
+    FROM Opportunity
+    WHERE StageName = 'Closed Won' AND AccountId = '001ak00000aw6wnAAA'
+
+    SELECT COUNT(Id) FROM Account
