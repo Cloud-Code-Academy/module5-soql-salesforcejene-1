@@ -18,7 +18,7 @@ public with sharing class SOQLTest {
         insert new List<Lead>{testLead1, testLead2};
 
         // Call the method to test
-        List<Lead> leads = null; //Replace null with your method call from SOQL class
+        List<Lead> leads = SOQL.getAllLeads();
 
         // Assert that the number of leads returned is correct
         System.assertEquals(2, leads.size(), 'Number of leads returned is incorrect.');
@@ -46,7 +46,7 @@ public with sharing class SOQLTest {
         insert new List<Contact>{testContact1, testContact2, testContact3};
 
         // Call the method to test
-        List<Contact> contacts = null; //Replace null with your method call from SOQL class
+        List<Contact> contacts = SOQL.getContactsByFirstName();
 
         // Assert that the number of contacts returned is correct
         System.assertEquals(2, contacts.size(), 'Number of contacts returned is incorrect.');
@@ -71,7 +71,7 @@ public with sharing class SOQLTest {
         insert new List<Contact>{testContact1, testContact2, testContact3};
 
         // Call the method to test
-        List<Id> contactIds = null; //Replace null with your method call from SOQL class
+        List<Id> contactIds = SOQL.getContactIdsByLastName();
 
         // Assert that the number of contact IDs returned is correct
         System.assertEquals(2, contactIds.size(), 'Number of contact IDs returned is incorrect.');
@@ -91,9 +91,11 @@ public with sharing class SOQLTest {
         Opportunity testOpportunity2 = new Opportunity(Name = 'Test Opportunity 2', StageName = 'Closed Won', CloseDate = Date.today(), AccountId = testAccount.Id, Amount = 2000);
         Opportunity testOpportunity3 = new Opportunity(Name = 'Test Opportunity 3', StageName = 'Prospecting', CloseDate = Date.today(), AccountId = testAccount.Id, Amount = 3000);
         insert new List<Opportunity>{testOpportunity1, testOpportunity2, testOpportunity3};
-
-        // Call the method to test
-        List<Opportunity> opportunities = null; //Replace null with your method passing in testAccount.Id
+        // // Call the method to test
+     // Call the method to test
+        List<Opportunity> opportunities = SOQL.getClosedWonOpportunityCountByAccount(testAccount.Id); //Replace null with your method passing in testAccount.Id
+        //orig
+        //List<Opportunity> opportunities = null;
 
         // Assert that the number of opportunities returned is correct
         System.assertEquals(2, opportunities.size(), 'Number of opportunities returned is incorrect.');
@@ -125,7 +127,7 @@ public with sharing class SOQLTest {
         insert accounts;
 
         // Call the method to test
-        Integer accountCount = null; //Replace null with your method call from SOQL class
+        Integer accountCount = SOQL.getAccountCount();
 
         // Assert that the number of accounts returned is correct
         System.assertEquals(numAccounts, accountCount, 'Number of accounts returned is incorrect.');
@@ -142,7 +144,7 @@ public with sharing class SOQLTest {
         insert new List<Task>{testTask1, testTask2, testTask3};
     
         // Call the method to test
-        Map<Id, Task> tasks = null; //Replace null with your method call from SOQL class
+        Map<Id, Task> tasks = SOQL.getTasksDueNextWeek(); //Replace null with your method call from SOQL class
     
         // Assert that the number of tasks returned is correct
         System.assertEquals(2, tasks.size(), 'Number of tasks returned is incorrect.');
@@ -161,7 +163,7 @@ public with sharing class SOQLTest {
         insert new List<Contact>{testContact1, testContact2, testContact3};
 
         // Call the method to test
-        List<Contact> contacts = null; //Replace null with your method call from SOQL class
+        List<Contact> contacts = SOQL.getContactsByEmailDomain();
 
         // Assert that the number of contacts returned is correct
         System.assertEquals(2, contacts.size(), 'Number of contacts returned is incorrect.');
@@ -248,8 +250,12 @@ public with sharing class SOQLTest {
         Lead testLead5 = new Lead(LastName = 'Test Lead 5', Company = 'Test Company 5', Phone = '1234567890', Email = '', LeadSource = '', Title = '');
         insert new List<Lead>{testLead1, testLead2, testLead3, testLead4};
 
+        //assign values for params
+        String leadSource = 'Web';
+        String keyword    = 'Engineer';
+        
         // Call the method to test
-        List<Lead> leads = null; //Replace null with your method passing 'Web', 'Engineer' 
+        List<Lead> leads = SOQL.getLeadsBySourceOrTitle(leadSource, keyword);
 
         // Assert that the number of leads returned is correct
         System.assertEquals(3, leads.size(), 'Number of leads returned is incorrect.');
@@ -738,7 +744,7 @@ public with sharing class SOQLTest {
         Opportunity testOpp1 = new Opportunity(Name = 'Test Opp 1', StageName = 'Closed Won', CloseDate = Date.today(), AccountId = testAccount1.Id);
         insert testOpp1;
 
-        // Call the method to test
+        // Call the method to test 
         SOQL.setPrimaryContact();
 
         // Query for the updated Opportunity
