@@ -34,6 +34,7 @@ public with sharing class SOQL {
                             FROM Lead
                             WITH USER_MODE
                             ];
+    System.debug('DONE! DONE!!');
     return grabLeads;
     }
 
