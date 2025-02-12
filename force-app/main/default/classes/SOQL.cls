@@ -496,68 +496,49 @@ public with sharing class SOQL {
      * @param List of cloned Opportunity Ids
      */
     public static void cloneLineItems(Id origOppId, List<Id> cloneOppIds) {
-
-        List<Opportunity>                    origOpp = new List<Opportunity>();
-        List<OpportunityLineItem> oppOrgLineItemList = new List<OpportunityLineItem>();
-        
-        //get opp info to store for later
-        if(Schema.SObjectType.Opportunity.isAccessible() &&
-            Schema.SObjectType.Opportunity.fields.Pricebook2Id.isAccessible()){
-            origOpp = [SELECT Id, Pricebook2Id
-                        FROM Opportunity
-                        WHERE id = :origOppId
-                    ];
-        }
-        System.debug('origOpp: ' + origOpp);
+        Opportunity origOpp = new Opportunity();
 
         // Query the original Opportunity Line Items
-        If (Schema.SObjectType.OpportunityLineItem.isAccessible() &&
-            Schema.SObjectType.OpportunityLineItem.fields.OpportunityId.isAccessible() &&
-            Schema.SObjectType.Opportunity.fields.Pricebook2Id.isAccessible() &&
-            Schema.SObjectType.OpportunityLineItem.fields.Product2Id.isAccessible() &&
-            Schema.SObjectType.OpportunityLineItem.fields.Quantity.isAccessible() &&
-            Schema.SObjectType.OpportunityLineItem.fields.UnitPrice.isAccessible()) {
 
-            oppOrgLineItemList = [SELECT Id, OpportunityId, Product2Id, Opportunity.Pricebook2Id, Quantity, UnitPrice
-                                        FROM OpportunityLineItem
-                                        WHERE OpportunityId = :origOppId
-                                        ];
-
-            /* oppOrgLineItemList = [SELECT Id, OpportunityId, Opportunity.Pricebook2Id, Product2Id, Quantity, UnitPrice
-                                        FROM OpportunityLineItem
-                                        WHERE OpportunityId = :origOppId
-                                    ];*/
-        } //**NOT SURE WHY validation check did not pass for the OpportunityLineItem object**
-        System.debug('oppOrgLineItemList results: ' + oppOrgLineItemList);
+        origOpp = [SELECT Id, Pricebook2Id, 
+                            (SELECT Id, Product2Id, Quantity, UnitPrice, PricebookEntryId
+                            FROM OpportunityLineItems)
+                        FROM Opportunity                        
+                        WHERE Id = :origOppId
+                        WITH USER_MODE
+                        //WITH USER_MODE use at end database.insert (var, accessLevel.USER_MODE)
+                    ];
+            
         // Create a list to hold the new line items
         List<OpportunityLineItem> newLineItems = new List<OpportunityLineItem>();
         
         // Generate a random number between 1 and 3
         Integer randomNumber = Math.round(Math.random() * 2) + 1;
 
-        // Loop through each cloned Opportunity Id
-        for (Id cloneOppId : cloneOppIds){
-            // Loop through each original line item
-            cloneOppId = origOppId;
-            for (OpportunityLineItem origLineItem : oppOrgLineItemList) {   
+        // Get the Pricebook2Id from the original Opportunity
+        Id pricebookId = origOpp == null ? null : origOpp.Pricebook2Id;
 
+        // Loop through each cloned Opportunity Id
+        for (Id cloneOppId : cloneOppIds){ 
+            // Loop through each original line item
+            for (OpportunityLineItem origLineItem : origOpp.OpportunityLineItems){
                 // Clone the original line item and add the random number to the quantity
-                OpportunityLineItem clonedItem = new OpportunityLineItem();
-                //clonedItem.Pricebook2Id        = oppOrgLineItemList[0].Pricebook2Id;
-                //clonedItem.Pricebook2Id        = origLineItem.Pricebook2Id;
+                
+                OpportunityLineItem clonedItem = new OpportunityLineItem();    
                 clonedItem.OpportunityId       = cloneOppId;
+                clonedItem.PricebookEntryId    = origLineItem.PricebookEntryId;
                 clonedItem.Product2Id          = origLineItem.Product2Id;
                 clonedItem.Quantity            = origLineItem.Quantity + randomNumber;
                 clonedItem.UnitPrice           = origLineItem.UnitPrice;
                 //add to list
                 newLineItems.add(clonedItem);
-            } 
+            }
         }
         // Insert the new line items
-        if (!newLineItems.isEmpty()){
-            if (Schema.SObjectType.OpportunityLineItem.isAccessible()) {
-                insert newLineItems;
-            } //**NOT SURE WHY validation check did not pass for the OLI object**
+        if (!newLineItems.isEmpty() && 
+            Schema.SObjectType.OpportunityLineItem.isCreateable()){
+            insert newLineItems;
+            //**NOT SURE WHY validation check did not pass for the OLI object**
         }
     }
     
@@ -570,17 +551,16 @@ public with sharing class SOQL {
     public static List<Opportunity> getOpportunityDetailsForClosedWon() {      
         List<Opportunity>oppClosedWonList = new List<Opportunity>();
         if(Schema.SObjectType.Opportunity.isAccessible() &&
-            Schema.SObjectType.User.isAccessible() &&
             Schema.SObjectType.Account.isAccessible() &&
+            Schema.SObjectType.Opportunity.fields.Id.isAccessible() &&
             Schema.SObjectType.Opportunity.fields.Name.isAccessible() &&
-            Schema.SObjectType.Opportunity.fields.StageName.isAccessible() &&
-            Schema.SObjectType.Opportunity.fields.OwnerId.isAccessible() &&
+            Schema.SObjectType.Account.fields.Id.isAccessible() &&
             Schema.SObjectType.Account.fields.Name.isAccessible() ){
-            oppClosedWonList = [SELECT Id, Name, Account.Name, Owner.Name
+            oppClosedWonList = [SELECT Id, Name, Account.Name, AccountId
                                                 FROM Opportunity
                                                 WHERE StageName = 'Closed Won'
                                             ];
-            }//**NOT SURE WHY validation check did not pass for the Account object**
+            }//**NOT SURE WHY validation check did not pass for the Account & Opportunity object**
         return oppClosedWonList;
     }
 
@@ -592,23 +572,41 @@ public with sharing class SOQL {
     public static void setPrimaryContact() {
         //Use the getOpportunityDetailsForClosedWon() method to get the Opportunities
         List<Opportunity> closedWonOpps = getOpportunityDetailsForClosedWon();
+
         // Create a set of Account Ids from the Opportunities
-        /*Set<Account> acctIdSet = [SELECT Id, 
-                                    (SELECT Id
-                                    FROM Opportunities
-                                    WHERE Id = closedWonOpps.Id)
-                                    FROM Account
-                                    WHERE Id = :closedWonOpps
-                                ];*/
+        Set <Id> accIdsSet = new Set <Id>();        
+        for (Opportunity opp : closedWonOpps){ //storing the unique AccountId in the set
+            accIdsSet.add(opp.AccountId);
+        }
+        system.debug('accIdsSet results: ' + accIdsSet);
+        // Query the Contacts        
+        List<Contact> matchingContacts = new List<Contact>();
 
-        // Query the Contacts
-
+        if (Schema.SObjectType.Contact.isAccessible() &&
+            Schema.SObjectType.Contact.fields.Id.isAccessible() &&
+            Schema.SObjectType.Contact.fields.AccountId.isAccessible() ){
+            matchingContacts = [SELECT Id, AccountId
+                                FROM Contact
+                                WHERE AccountId IN :accIdsSet
+                                ORDER BY FirstName DESC
+                            ];
+            }        
+        system.debug('matchingContacts results:: ' + matchingContacts);
         // Loop through each Contact and add the Account Id and Contact to the map
-        
+        Map<Id, Contact> accountIdToContactMap = new Map<Id, Contact>();
+        for (Contact con : matchingContacts){
+            accountIdToContactMap.put(con.AccountId, con);
+        }
+        // Contact matchContact = new Contact();
         // Loop through each Opportunity
-
-                // Update the Opportunity primary contact from accountToContactMap
-
+        for (Opportunity opp : closedWonOpps) {
+            // Update the Opportunity primary contact from accountToContactMap
+            Contact matchContact = accountIdToContactMap.get(opp.AccountId);
+            opp.Primary_Contact__c = matchContact.Id;
+        }
         // Update the Opportunities
+        if (!closedWonOpps.isEmpty() ){
+            update closedWonOpps;
+        }        
     }
 }
