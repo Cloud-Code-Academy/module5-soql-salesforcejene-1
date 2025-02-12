@@ -1,0 +1,42 @@
+public class readCntrlPlusDependPickLists {
+    public static void retrieveVals(){
+        //access picklist values
+        string objName = 'Case';
+        string controllingPl = 'Case_Reason_1__c';
+        string dependentPl   = 'Case_Reason_2__c';
+        //declare map to store list of dependent values for controlling picklist
+        Map<String, List<String>> controllingInfo = new Map<String, List<String>>();
+        
+        //Get the type being used
+        Schema.SObjectType objType = Schema.getGlobalDescribe().get(objName);
+        Schema.DescribeSObjectResult descbResult = objType.getDescribe();
+        
+        //Get controlling field values
+        Schema.DescribeFieldResult controllingFieldInfo = descbResult.fields.getMap()
+            .get(controllingPl)
+            .getDescribe();
+        
+        //Get dependent field values
+        Schema.DescribeFieldResult dependentFieldInfo = descbResult.fields.getMap()
+            .get(dependentPl)
+            .getDescribe();
+        
+        //store results
+        List<Schema.PicklistEntry> controllingVals = controllingFieldInfo.getPicklistValues();
+        List<Schema.PicklistEntry> dependentVals = dependentFieldInfo.getPicklistValues();
+        
+        //Get table for controlling picklist values
+        for (Schema.PicklistEntry currControlVal : controlVals){
+            controllingVals.put(currControlVal.getLabel(), new List<String>());
+        }
+        
+        //iterate through the dependent picklist
+        for (Schema.PicklistEntry curDependVal : dependentVals){
+            //get the ValidFor info
+            String jsonString = JSON.serialize(curDependVal);
+            MyPickListInfo info = (MyPickListInfo) JSON.deserialize(jsonString, MyPickListInfo.Class);
+            
+        }
+    }
+    
+}
