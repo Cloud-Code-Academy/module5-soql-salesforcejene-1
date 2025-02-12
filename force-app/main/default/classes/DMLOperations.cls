@@ -40,7 +40,7 @@ public with sharing class DMLOperations {
         account.BillingCity = accountBillingCity;
         account.NumberOfEmployees = accountNumberOfEmployees;
         // Insert the Account into the database
-        insert account;
+        Database.insert(account, accessLevel.USER_MODE);
         // Return the Id of the newly created Account
         return account.Id;
     }
@@ -55,9 +55,8 @@ public with sharing class DMLOperations {
         // Create a new Account and set the fields inline
         Account acc = new Account(Name = name, Industry = industry);
         // Insert the Account
-        insert acc;
+        Database.insert(acc, accessLevel.USER_MODE);
     }
-
     
     /**
      * Question 3
@@ -74,7 +73,7 @@ public with sharing class DMLOperations {
         // Set the AccountId field to the given accountId
 
         // Insert the Contact into the database
-        insert contact;
+        Database.insert(contact, accessLevel.USER_MODE);
         // Return the Id of the newly created Contact
         return contact.Id;
     }
@@ -88,12 +87,17 @@ public with sharing class DMLOperations {
      */
     public static void updateContactLastName(Id contactId, String newLastName) {
         // Retrieve the Contact from the database
-        Contact contactToUpdate = [SELECT Id FROM Contact WHERE Id = :contactId LIMIT 1];
+        Contact contactToUpdate = [SELECT Id 
+                                    FROM Contact
+                                    WHERE Id = :contactId
+                                    WITH USER_MODE
+                                    LIMIT 1
+                                ];
 
         // Update the Contact's last name
         contactToUpdate.LastName = newLastName;
         // Update the Contact in the database
-        update contactToUpdate;
+        Database.update(contactToUpdate, accessLevel.USER_MODE);
     }   
 
     /**
@@ -105,13 +109,17 @@ public with sharing class DMLOperations {
      */
     public static void updateOpportunityStage(Id oppId, String newStage) {
         // Retrieve the Opportunity from the database
-        Opportunity updateOpp = [SELECT Id, StageName FROM Opportunity WHERE Id = :oppId];
+        Opportunity updateOpp = [SELECT Id, StageName
+                                FROM Opportunity
+                                WHERE Id = :oppId
+                                WITH USER_MODE
+                            ];
 
         // Update the Opportunity's stage
         updateOpp.stageName = newStage;
         
         // Update the Opportunity in the database
-        update updateOpp;
+        Database.update(updateOpp, accessLevel.USER_MODE);
     }
 
     /**
@@ -124,13 +132,17 @@ public with sharing class DMLOperations {
      */
     public static void updateAccountFields(Id accountId, String newName, String newIndustry) {
         // Query the account
-        Account acc = [SELECT Id, Name, Industry FROM Account WHERE Id = :accountId];
+        Account acc = [SELECT Id, Name, Industry
+                        FROM Account
+                        WHERE Id = :accountId
+                        WITH USER_MODE
+                    ];                        
 
         // Update the Account with the given Id with the new name and industry
         acc.Id          = accountId;
         acc.Name        = newName;
         acc.Industry    = newIndustry;
-        update acc;
+        Database.update(acc, accessLevel.USER_MODE);
     }
 
 
@@ -148,10 +160,9 @@ public with sharing class DMLOperations {
             opp.stageName = 'Qualification'; // Set the Opportunity's Stage to Qualification            
             opp.closeDate = Date.today().addMonths(3); // Set the Opportunity's Close Date to 3 months from today
             opp.amount    = 50000; // Set the Opportunity's Amount to 50000
-            System.debug(LoggingLevel.FINEST, 'Opportunity Name' + opp.Name);
         }
         // Upsert the opportunities List so that records are either updated or created
-        upsert opportunities;
+        Database.upsert(opportunities, accessLevel.USER_MODE);
     }
 
     /**
@@ -169,12 +180,17 @@ public with sharing class DMLOperations {
         Account matchedAccount;
 
         //*Query Account to find a matching accountName; using a list in order to check for records.    
-        List <Account> accountToInsert = [SELECT Id, Name FROM Account WHERE Name = :accountName LIMIT 1];
+        List <Account> accountToInsert = [SELECT Id, Name
+                                        FROM Account
+                                        WHERE Name = :accountName 
+                                        WITH USER_MODE
+                                        LIMIT 1
+                                    ];
         
         if (accountToInsert.isEmpty()){
             //insert new account if no match is found
             matchedAccount = new Account(Name = accountName);
-            insert matchedAccount;
+            Database.insert(matchedAccount, accessLevel.USER_MODE);
         }  else { 
             matchedAccount = accountToInsert[0]; //Use the first record
         }
@@ -182,7 +198,9 @@ public with sharing class DMLOperations {
         //Query existing Opps that match the above Account
         List <Opportunity> existingOppsList = [ SELECT Id, Name
                                                 FROM Opportunity 
-                                                WHERE AccountId = :matchedAccount.Id];
+                                                WHERE AccountId = :matchedAccount.Id
+                                                WITH USER_MODE
+                                            ];
                                                     
        //Using a set, store existing opps that are related to the matched account
         Set <String> existingOppsNames = new Set<String>();
@@ -212,7 +230,7 @@ public with sharing class DMLOperations {
         
         // Create an Opportunity with the given name, if the list is not empty
         if (!listOfOppsToBeUpserted.isEmpty()){
-            upsert listOfOppsToBeUpserted;
+            Database.update(listOfOppsToBeUpserted, accessLevel.USER_MODE);
         }       
     }
 
@@ -230,6 +248,7 @@ public with sharing class DMLOperations {
         List<Account> accounts = [SELECT Id, Name
                                     FROM Account 
                                     WHERE Name = :accountName
+                                    WITH USER_MODE
                                 ];
         //instantiate a new account variable
         Account newAcc;
@@ -244,7 +263,7 @@ public with sharing class DMLOperations {
         }
         accounts.add(newAcc);
         // Upsert the Account
-        upsert newAcc;
+        Database.upsert(newAcc, accessLevel.USER_MODE);
         return newAcc;
 	}
 
@@ -263,14 +282,14 @@ public with sharing class DMLOperations {
         if (!contactsToUpsert.isEmpty()){
             for (Contact contact : contactsToUpsert){
                 String accountName = contact.LastName;
-                // 3 - Get the account based on the name or create one if it doesn't exist
+                // Get the account based on the name or create one if it doesn't exist
                 Account account = upsertAccount(accountName);
-                // 4 - Link the Contact to its Account using the Account Id
+                // Link the Contact to its Account using the Account Id
                 contact.AccountId = account.Id;
             }    
         }    
-        // 5 - Upsert the Contacts
-        upsert contactsToUpsert;
+        // Upsert the Contacts
+        Database.upsert(contactsToUpsert, accessLevel.USER_MODE);
 	}
 
     /**
@@ -289,11 +308,11 @@ public with sharing class DMLOperations {
         
         // Insert the Leads
         if (!leadNames.isEmpty()){
-        insert listOfLeads;
-        }         
+            Database.insert(listOfLeads, accessLevel.USER_MODE);
+        }
         // Delete the Leads
         if (!leadNames.isEmpty()){
-            delete listOfLeads;
+            Database.delete(listOfLeads, accessLevel.USER_MODE);
         }
     }
 
@@ -315,12 +334,12 @@ public with sharing class DMLOperations {
         }        
         // Insert the cases
         if (numOfCases > 0){
-            insert storeCase;
+            Database.insert(storeCase, accessLevel.USER_MODE);
         }
         
         // Delete the cases
         if (numOfCases > 0){
-            delete storeCase;
+            Database.delete(storeCase, accessLevel.USER_MODE);
         }
     }
 }
